@@ -1,0 +1,111 @@
+<!DOCTYPE HTML>
+<html>
+<body>
+
+<canvas id="myCanvas" width="4000" height="2000" >your browser does not support the canvas tag </canvas>
+
+<script type="text/javascript">
+
+var frameCount = 0;
+
+
+function draw() 
+{
+    var canvas=document.getElementById('myCanvas');
+    var ctx=canvas.getContext('2d');
+ //   ctx.clearRect(0, 0, canvas.width, canvas.height);
+    return ctx
+}
+
+function Xian(len) 
+{
+    var ctx = draw();
+
+    ctx.strokeStyle = "red";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x+len, y+len);//设置起点  
+    ctx.lineTo(x+len+1, x+len+1);//画线   
+    ctx.closePath();
+    ctx.stroke();
+    x=len;
+    y=len;
+}
+
+function Rect()
+{
+    var ctx = draw();
+    ctx.fillStyle='#FF0000';
+    ctx.fillRect(0,0,80,100);
+}
+
+
+
+function Dot(x, y) 
+{
+    var ctx = draw();
+    ctx.strokeStyle = "red";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, y);//设置起点  
+    ctx.lineTo(x+1, y);//画线   
+    ctx.closePath();
+    ctx.stroke();
+}
+
+var canvas=document.getElementById('myCanvas');
+var canvasX = canvas.width;
+var canvasY = canvas.height;
+
+var scalaf = canvasX/4;
+//var scalaf = Math.log(canvasX)/Math.log(10);
+
+var triangle = [[0.5, 0], [0, 1], [1,1]];
+var curPos = [5,1];
+
+
+function Sierpinski()
+{
+    var rd = Math.random()*10;
+    rd = Math.floor(rd);
+    rd = rd % 3;
+    var dst = triangle[rd];
+
+    var pos = [(dst[0] - curPos[0])/2, (dst[1] - curPos[1])/2];
+    curPos = [pos[0]+curPos[0], pos[1]+curPos[1]];
+
+
+    var canvas=document.getElementById('myCanvas');
+    Dot(curPos[0]* scalaf + canvasX/2, curPos[1]*scalaf+canvasY/2);
+}
+
+
+
+
+
+//Rect();
+
+function looping()
+{
+    looped = requestAnimationFrame(looping);
+    if (true) 
+    {
+        frameCount += 1;
+        //Dot(0+frameCount, 0+frameCount);
+        for (var i = 1; i <  120; i++) Sierpinski();
+        
+    }
+    else
+    {
+        window.cancelAnimationFrame(looped);
+        looped = null;
+        //document.write("end")
+    }
+}
+looping();
+
+
+</script>
+
+</body>
+</html>

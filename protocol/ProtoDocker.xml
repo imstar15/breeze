@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <ProtoTraits>
-  <MinNo>2000</MinNo>
-  <MaxNo>5000</MaxNo>
+  <MinNo>3000</MinNo>
+  <MaxNo>4000</MaxNo>
   <UseLog4z>true</UseLog4z>
 </ProtoTraits>
 
@@ -11,7 +11,7 @@
     <!-------------------------------------------------------------------------------------------->
     <!-------------------------------  Pulse   --------------------------------------------------->
     <!-------------------------------------------------------------------------------------------->
-    <packet name="SelfBeingPulse" desc= "">
+    <packet name="DockerKnock" desc= "">
         <member name="areaID" type="ui64"   desc=""/>
         <member name="dockerID" type="ui64"   desc=""/>
     </packet> 
@@ -32,17 +32,17 @@
         <member name="serviceType" type="ui16"   desc=""/>
         <member name="serviceID" type="ui64"   desc=""/>
         <member name="serviceName" type="string"   desc=""/>
-        <member name="clientDockerID" type="ui32"   desc=""/>
+        <member name="clientDockerID" type="ui64"   desc=""/>
         <member name="clientSessionID" type="ui32"   desc=""/>
     </packet>
     
     <packet name="ServiceInfo" desc= "Service被装载或者属性更改,需要通知给其他Docker的信息">
-        <member name="serviceDockerID" type="ui32"   desc=""/>
+        <member name="serviceDockerID" type="ui64"   desc=""/>
         <member name="serviceType" type="ui16"   desc=""/>
         <member name="serviceID" type="ui64"   desc=""/>
         <member name="serviceName" type="string"   desc=""/>
         <member name="status" type="ui16"   desc=""/>
-        <member name="clientDockerID" type="ui32"   desc=""/>
+        <member name="clientDockerID" type="ui64"   desc=""/>
         <member name="clientSessionID" type="ui32"   desc=""/>
     </packet>
     <array name="ServiceInfoArray" type="ServiceInfo" desc="" />
@@ -58,7 +58,7 @@
     <packet name="SwitchServiceClientNotice" desc= "更改clientID">
         <member name="serviceType" type="ui16"   desc=""/>
         <member name="serviceID" type="ui64"   desc=""/>
-        <member name="clientDockerID" type="ui32"   desc=""/>
+        <member name="clientDockerID" type="ui64"   desc=""/>
         <member name="clientSessionID" type="ui32"   desc=""/>
     </packet>
 
@@ -68,7 +68,7 @@
 
     <packet name="RealClientClosedNotice" desc= "客户端离线通知">
         <member name="serviceID" type="ui64"   desc=""/>
-        <member name="clientDockerID" type="ui32"   desc=""/>
+        <member name="clientDockerID" type="ui64"   desc=""/>
         <member name="clientSessionID" type="ui32"   desc=""/>
     </packet>
 
@@ -106,7 +106,20 @@
         </body>
     </packet>
 
+    <packet name="ReloadDBDictNotice" desc= "重新加载字典文件">
+    </packet>
+    <packet name="ReloadDBDictFinish" desc= "重新加载字典文件">
+         <member name="dockerID" type="ui64" desc="" />
+         <member name="activeTime" type="double" desc="" />
+         <member name="used" type="double" desc="" />
+    </packet>
 
+    <packet name="KickClientsNotice" desc= "踢人">
+        <member name="isAll" type="ui16" desc="" />
+        <member name="avatars" type="ServiceIDArray" desc="指定avatar" />
+        <member name="accounts" type="AccountArray" desc="指定account" />
+        <member name="forbidDuration" type="ui64" desc="限制登录的持续时间(关服前有效 不记录到数据库)" />
+    </packet>
     <!-------------------------------------------------------------------------------------------->
     <!--------------------------------   db service   -------------------------------------------->
     <!-------------------------------------------------------------------------------------------->
@@ -154,9 +167,9 @@
     </packet>
 
     <packet name="WebServerRequest" desc="">
-        <member name="fromServiceType" type="ui32"  desc=""/>
+        <member name="fromServiceType" type="ui16"  desc=""/>
         <member name="fromServiceID" type="ui64"  desc=""/>
-        <member name="traceID" type="ui32"  desc=""/>
+        <member name="traceID" type="ui64"  desc=""/>
         <member name="ip" type="string"  desc=""/>
         <member name="port" type="ui16"  desc=""/>
         <member name="host" type="string"  desc=""/>

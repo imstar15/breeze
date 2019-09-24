@@ -2,7 +2,7 @@
 
 /*
 * breeze License
-* Copyright (C) 2016 YaweiZhang <yawei.zhang@foxmail.com>.
+* Copyright (C) 2016 - 2017 YaweiZhang <yawei.zhang@foxmail.com>.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 
 
 
-
+#pragma once
 #ifndef _UTLS_H_
 #define _UTLS_H_
 
@@ -59,12 +59,14 @@
 #include <string.h>
 #include <signal.h>
 #include <time.h>
+#include <cstdint>
 
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <utility>
 #include <algorithm>
+#include <limits>
 
 #include <functional>
 #include <memory>
@@ -85,6 +87,8 @@
 #ifdef min
 #undef  min
 #endif // min
+
+
 
 //file
 //==========================================================================
@@ -120,46 +124,30 @@ std::string genFileMD5(std::string filename);
 
 //string
 //==========================================================================
-template<class T>
-std::string toString(const T &t);
+/* template<class T>
+std::string toString(const T &t); */
+/*
 template<class To>
-typename std::enable_if<std::is_integral<To>::value, To>::type fromString(const std::string & t, To def);
-
-//both 1 left, 2right, 3 both
-std::string trim(const std::string &str, const std::string& ign, int both = 3);
-std::string trim(std::string &&str, const std::string & ign, int both);
-
-template<class First, class Second>
-typename std::enable_if<std::is_integral<int>::value, std::pair<First, Second>>::type splitPairString(const std::string & str, const std::string & delimiter);
+typename To fromString(const std::string & t);*/
+inline void trimImpl(const char * buf, size_t len, const char ign, size_t & offset, size_t & outLen, int flag);
+inline void trimL(const char * begin, size_t len, const char ign, size_t & offset, size_t & outLen) { return trimImpl(begin, len, ign, offset, outLen, 1); }
+inline void trimR(const char * begin, size_t len, const char ign, size_t & offset, size_t & outLen) { return trimImpl(begin, len, ign, offset, outLen, 2); }
+inline void trim(const char * begin, size_t len, const char ign, size_t & offset, size_t & outLen) { return trimImpl(begin, len, ign, offset, outLen, 0); }
 
 
-template<class ... T>
-typename std::enable_if<std::is_integral<int>::value, std::tuple<T ... >>::type splitTupleString(const std::string & text, const std::string & deli, const std::string & ign);
-
-template<class ... T>
-typename std::enable_if<std::is_integral<int>::value, std::vector<std::tuple<T ...> >>::type 
-splitArrayString(const std::string & text, const std::string & deli, const std::string & deliMeta, const std::string & ign);
-
-template<class Key, class ... T>
-typename std::enable_if<std::is_integral<int>::value, std::map<Key, std::tuple<Key, T ...> >>::type 
-splitDictString(const std::string & text, const std::string & deli, const std::string & deliMeta, const std::string & ign);
-
-
-template<class Value>
-typename std::enable_if<std::is_integral<int>::value, std::vector<Value>>::type
-splitString(std::string text, const std::string & deli, const std::string & ign);
 
 
 
 template<class Container>  //example: Container = std::vector<int>
-std::string mergeToString(const Container & contariner, const std::string& deli);
+std::string mergeToString(const Container & contariner, char deli);
 template<class T>  //example: Container = std::vector<int>
-void mergeToString(std::string & dstString, const std::string& deli, const T & t);
+void mergeToString(std::string & dstString, char deli, const T & t);
 
-std::string subStringFront(const std::string & text, const std::string & deli);
-std::string subStringBack(const std::string & text, const std::string & deli);
-std::string subStringWithoutFront(const std::string & text, const std::string & deli);
-std::string subStringWithoutBack(const std::string & text, const std::string & deli);
+// text, deli, store text in pair.first when not found deli, greedy search
+std::pair<std::string, std::string> subString(const std::string & text, const std::string & deli, bool preStore = true, bool isGreedy = false);
+std::string replaceString(const std::string & text, const std::string & pattern, const std::string &rep, bool once);
+
+
 
 std::string toUpperString(std::string  org);
 std::string toLowerString(std::string  org);
@@ -226,14 +214,33 @@ inline int distanceDays(time_t first, time_t second);
 const double POINT_DOUBLE = 1E-15; // the number N is decimal places (decimalism). N=log10(1/POINT_DOUBLE) . example 1E-15 ==> 15 number of decimal places.
 const double PI = 3.14159265358979323;
 
+
 inline bool isEqual(double f1, double f2, double acc = POINT_DOUBLE);
 inline bool isZero(double f, double acc = POINT_DOUBLE);
-inline double getDistance(double org, double dst);
-inline double getDistance(double orgx, double orgy, double dstx, double dsty);
-inline double getRadian(double orgx, double orgy, double dstx, double dsty);
+
+inline double getDistance(double posx1, double posy1, double posx2, double posy2);
+inline double getDistance(const std::tuple<double, double> & pos1, const std::tuple<double, double> & pos2);
+
+inline double getRadian(double vx, double vy);
+inline double getRadian(double vx1, double vy1, double vx2, double vy2);
+inline double getRadian(const std::tuple<double, double> & v);
+inline double getRadian(const std::tuple<double, double> & v1, const std::tuple<double, double> & v2);
+
+
 inline std::tuple<double, double> getFarPoint(double orgx, double orgy, double radian, double distance);
-inline std::tuple<double, double> getFarOffset(double orgx, double orgy, double dstx, double dsty, double distance);
-inline std::tuple<double, double> rotatePoint(double orgx, double orgy, double orgrad, double distance, double radian);
+
+inline std::tuple<double, double> rotateVertical(double vx, double vy, bool isClockwise);
+inline std::tuple<double, double> rotateVertical(std::tuple<double, double> vt, bool isClockwise);
+inline std::tuple<double, double> normalize(double vx, double vy);
+inline std::tuple<double, double> normalize(std::tuple<double, double> vt);
+inline double dot(std::tuple<double, double> vt1, std::tuple<double, double> vt2);
+inline double det(std::tuple<double, double> vt1, std::tuple<double, double> vt2);
+inline double dot(double vx1, double vy1, double vx2, double vy2);
+inline double det(double vx1, double vy1, double vx2, double vy2);
+inline double distLine(double linex1, double liney1, double linex2, double liney2, double cx, double cy);
+inline double distLine(std::tuple<double, double> line1, std::tuple<double, double> line2, std::tuple<double, double> pos);
+inline std::tuple<double, double> shortestLine(std::tuple<double, double> line1, std::tuple<double, double> line2, std::tuple<double, double> pos);
+inline std::tuple<double, double> shortestLine(double linex1, double liney1, double linex2, double liney2, double cx, double cy);
 
 //bit
 //==========================================================================

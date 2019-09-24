@@ -8,6 +8,9 @@ require("session")
 dump = Proto4z.dump
 dump = function(...) end
 
+local g_sendCount = 0
+local g_lastCleanCount = os.time()
+
 --{sID : {account, token, uID, nickName, iconID, ip, port, authed}}
 -- if authed then login logic server, else login login server.
 _sessions = {}
@@ -16,6 +19,8 @@ function send(sID, protoName, proto)
     logd("send " .. protoName)
     local data = Proto4z.encode(proto, protoName)
     summer.sendContent(sID, Proto4z[protoName].__protoID, data)
+    g_sendCount = g_sendCount + 1
+
 end
 
 local function whenLinked(sID, ip, port)
@@ -36,6 +41,13 @@ local function whenPulse(sID)
         return
     end
     session:whenPulse(sID)
+
+    local now = os.time()
+    if now - g_lastCleanCount > 0 then
+        logi("send speed=" .. g_sendCount/(now - g_lastCleanCount) )
+        g_lastCleanCount = now
+        g_sendCount = 0
+    end
 end
 summer.whenPulse(whenPulse)
 
@@ -84,13 +96,13 @@ summer.start()
 for i=1, 6 do
     local cur = 2
     cur = math.fmod (i, cur) + 1
-	local sID = summer.addConnect(config.docker[cur].clientPubHost, config.docker[cur].clientPubPort, nil, 0)
-	if sID == nil then
-		summer.logw("sID == nil when addConnect")
+    local sID = summer.addConnect(config.docker[cur].clientPubHost, config.docker[cur].clientPubPort, nil, 0)
+    if sID == nil then
+        summer.logw("sID == nil when addConnect")
     else
         summer.logi("new connect sID=" .. sID)
         _sessions[sID] = Session.new(sID, string.format("test%04d", i), "111222", string.format("nick%04d", i), 0)
-	end
+    end
 
 end
 

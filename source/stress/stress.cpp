@@ -1,6 +1,6 @@
 ﻿/*
 * breeze License
-* Copyright (C) 2014-2016 YaweiZhang <yawei.zhang@foxmail.com>.
+* Copyright (C) 2014-2017 YaweiZhang <yawei.zhang@foxmail.com>.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
 //    signal(SIGINT, &sigFun);
 //    signal(SIGTERM, &sigFun);
 
-    srand(time(NULL));
+    srand((ui32)time(NULL));
     ILog4zManager::getPtr()->config("../log.cfg");
     ILog4zManager::getPtr()->start();
     ILog4zManager::getRef().setLoggerFileLine(LOG4Z_MAIN_LOGGER_ID, false);
@@ -83,6 +83,8 @@ int main(int argc, char* argv[])
         lua_getfield(L, -1, "logi");
         lua_setglobal(L, "print");
         lua_pop(L, 1);
+
+        //luaopen_performence(L);
 
         status = luaL_dostring(L, R"(package.path = package.path .. ";" .. "../?.lua" .. ";" .. "../script/stress/?.lua" .. ";" .. "../../protocol/lua/?.lua" )");
         if (status && !lua_isnil(L, -1))

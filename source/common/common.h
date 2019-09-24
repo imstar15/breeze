@@ -2,7 +2,7 @@
 
 /*
 * breeze License
-* Copyright (C) 2014-2016 YaweiZhang <yawei.zhang@foxmail.com>.
+* Copyright (C) 2014-2017 YaweiZhang <yawei.zhang@foxmail.com>.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -42,8 +42,11 @@
 #include "dbAsync.h"
 #include "balance.h"
 #include "config.h"
+#include <DictCommon.h>
+#include <DictScene.h>
 #include <ProtoCommon.h>
 #include <ProtoSceneCommon.h>
+#include <ProtoReflection.h>
 #include "dbDict.h"
 
 

@@ -2,7 +2,7 @@
 
 /*
 * breeze License
-* Copyright (C) 2014-2016 YaweiZhang <yawei.zhang@foxmail.com>.
+* Copyright (C) 2014-2017 YaweiZhang <yawei.zhang@foxmail.com>.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -59,7 +59,7 @@ std::string readFileContent(const std::string & filename, bool isBinary, size_t 
         limitSize = fileLen - beginIndex;
     }
     
-    fseek(f, beginIndex, SEEK_SET);
+    fseek(f, (long)beginIndex, SEEK_SET);
     std::string ret;
     ret.resize(limitSize, '\0');
     size_t readLen = fread(&ret[0], 1, limitSize, f);
@@ -68,7 +68,7 @@ std::string readFileContent(const std::string & filename, bool isBinary, size_t 
     {
         return ret.substr(0, readLen);
     }
-    return std::move(ret);
+    return ret;
 }
 size_t writeFileContent(const std::string & filename, const char * buff, size_t buffLen, bool isAppend)
 {
@@ -188,10 +188,10 @@ static bool tmpSearchPath(std::string  path, std::vector<SearchFileInfo> & files
         return false;
     }
     path = fixPathString(path);
-    std::string wildcard = subStringBack(path, "/");
-    if (!wildcard.empty())
+    auto wildcard = subString(path, "/", true, true);
+    if (!wildcard.second.empty())
     {
-        path = subStringWithoutBack(path, "/") + "/";
+        path = wildcard.first + "/";
     }
     
 
@@ -215,13 +215,13 @@ static bool tmpSearchPath(std::string  path, std::vector<SearchFileInfo> & files
                 file.bDir = true;
                 strcpy_s(file.filename, sizeof(file.filename), fd.cFileName);
                 sprintf(file.fullpath, "%s%s", path.c_str(), fd.cFileName);
-                if (wildcard.empty())
+                if (wildcard.second.empty())
                 {
                     files.push_back(file);
                 }
                 if (recursion)
                 {
-                    tmpSearchPath(fixPathString(file.fullpath) + wildcard, files, recursion);
+                    tmpSearchPath(fixPathString(file.fullpath) + wildcard.second, files, recursion);
                 }
                 
             }
@@ -235,7 +235,7 @@ static bool tmpSearchPath(std::string  path, std::vector<SearchFileInfo> & files
             file.filesize += fd.nFileSizeLow;
             strcpy_s(file.filename, sizeof(file.filename), fd.cFileName);
             sprintf(file.fullpath, "%s%s", path.c_str(), fd.cFileName);
-            if (wildcard.empty() || compareStringWildcard(file.filename, wildcard))
+            if (wildcard.second.empty() || compareStringWildcard(file.filename, wildcard.second))
             {
                 files.push_back(file);
             }
@@ -266,13 +266,13 @@ static bool tmpSearchPath(std::string  path, std::vector<SearchFileInfo> & files
             file.filesize = statbuf.st_size;
             strcpy(file.filename, entry->d_name);
             sprintf(file.fullpath, "%s%s", path.c_str(), entry->d_name);
-            if (wildcard.empty())
+            if (wildcard.second.empty())
             {
                 files.push_back(file);
             }
             if (recursion)
             {
-                tmpSearchPath(fixPathString(file.fullpath)+wildcard, files, recursion);
+                tmpSearchPath(fixPathString(file.fullpath)+wildcard.second, files, recursion);
             }
         }
         else
@@ -282,7 +282,7 @@ static bool tmpSearchPath(std::string  path, std::vector<SearchFileInfo> & files
             file.filesize = statbuf.st_size;
             strcpy(file.filename, entry->d_name);
             file.fullpath[0] = '\0';
-            if (wildcard.empty() || compareStringWildcard(file.filename, wildcard))
+            if (wildcard.second.empty() || compareStringWildcard(file.filename, wildcard.second))
             {
                 files.push_back(file);
             }
@@ -337,156 +337,70 @@ void sleepMillisecond(unsigned int ms)
 #endif
 }
 
-std::string trim(const std::string &str, const std::string & ign, int both)
+
+
+
+std::pair<std::string,std::string> subString(const std::string & text, const std::string & deli, bool preStore, bool isGreedy)
 {
-    if (str.empty() ){ return ""; }
-    if (ign.empty()) { return str; }
-    size_t length = str.length();
-    size_t posBegin = 0;
-    size_t posEnd = 0;
-
-    //trim character 
-    for (size_t i = posBegin; i < length; i++)
+    std::string::size_type pos = std::string::npos;
+    if (!isGreedy)
     {
-        bool bCheck = false;
-        for (size_t j = 0; j < ign.length(); j++)
+        pos = text.find(deli);
+    }
+    else
+    {
+        pos = text.rfind(deli);
+    }
+    if (pos == std::string::npos)
+    {
+        if (preStore)
         {
-            if (str.at(i) == ign.at(j))
-            {
-                bCheck = true;
-            }
+            return std::make_pair(text, "");
         }
-        if (bCheck)
-        {
-            if (i == posBegin)
-            {
-                posBegin++;
-            }
-        }
-        else
-        {
-            posEnd = i + 1;
-        }
+        return std::make_pair("", text);
     }
-    if (both == 1)
-    {
-        posEnd = length;
-    }
-    else if (both == 2)
-    {
-        posBegin = 0;
-    }
-
-    if (posBegin == 0 && posEnd == length)
-    {
-        return str;
-    }
-    else if (posBegin < posEnd)
-    {
-        return str.substr(posBegin, posEnd - posBegin);
-    }
-    return "";
+    return std::make_pair(text.substr(0, pos - 0), text.substr(pos+deli.length()));
 }
 
-
-std::string trim(std::string &&str, const std::string & ign, int both)
+std::string replaceString(const std::string & text, const std::string & pattern, const std::string &rep, bool once)
 {
-    if (str.empty()) { return ""; }
-    if (ign.empty()) { return std::move(str); }
-    size_t length = str.length();
-    size_t posBegin = 0;
-    size_t posEnd = 0;
-
-    //trim character 
-    for (size_t i = posBegin; i < length; i++)
+    std::string ret;
+    size_t pos = 0;
+    do 
     {
-        bool bCheck = false;
-        for (size_t j = 0; j < ign.length(); j++)
+        size_t next = text.find(pattern, pos);
+        if (next != std::string::npos)
         {
-            if (str.at(i) == ign.at(j))
+            ret += text.substr(pos, next - pos);
+            ret += rep;
+            pos = next + pattern.length();
+            if (once)
             {
-                bCheck = true;
-            }
-        }
-        if (bCheck)
-        {
-            if (i == posBegin)
-            {
-                posBegin++;
+                ret += text.substr(pos);
+                pos = std::string::npos;
             }
         }
         else
         {
-            posEnd = i + 1;
+            ret += text.substr(pos);
+            pos = std::string::npos;
         }
-    }
-    if (both == 1)
-    {
-        posEnd = length;
-    }
-    else if (both == 2)
-    {
-        posBegin = 0;
-    }
 
-    if (posBegin == 0 && posEnd == length)
-    {
-        return std::move(str);
-    }
-    else if (posBegin < posEnd)
-    {
-        return str.substr(posBegin, posEnd - posBegin);
-    }
-    return "";
+    } while (pos != std::string::npos);
+    return ret;
 }
 
-std::string subStringFront(const std::string & text, const std::string & deli)
-{
-    auto pos = text.find(deli);
-    if (pos == std::string::npos)
-    {
-        return text;
-    }
-    return text.substr(0, pos - 0);
-}
-std::string subStringBack(const std::string & text, const std::string & deli)
-{
-    auto pos = text.rfind(deli);
-    if (pos == std::string::npos)
-    {
-        return text;
-    }
-    return text.substr(pos+deli.length());
-}
 
-std::string subStringWithoutFront(const std::string & text, const std::string & deli)
-{
-    auto pos = text.find(deli);
-    if (pos == std::string::npos)
-    {
-        return text;
-    }
-    return text.substr(pos+deli.length());
-}
 
-std::string subStringWithoutBack(const std::string & text, const std::string & deli)
-{
-    auto pos = text.rfind(deli);
-    if (pos == std::string::npos)
-    {
-        return text;
-    }
-    return text.substr(0, pos - 0);
-}
 std::string toUpperString(std::string  org)
 {
     std::for_each(org.begin(), org.end(), [](char &ch){ch = toupper(ch); });
-    return std::move(org);
+    return org;
 }
 std::string toLowerString(std::string  org)
 {
     std::for_each(org.begin(), org.end(), [](char &ch){ch = tolower(ch); });
-    return std::move(org);
+    return org;
 }
 
 bool compareStringIgnCase(const std::string & left, const std::string & right, bool canTruncate)
@@ -614,7 +528,7 @@ bool compareStringWildcard(std::string source, std::string mod, bool ignCase)
 Char. number range  |        UTF-8 octet sequence
 (hexadecimal)    |              (binary)
 --------------------+---------------------------------------------
-0000 0000-0000 007F | 0xxxxxxx
+0000 0000-0000 00F | 0xxxxxxx
 0000 0080-0000 07FF | 110xxxxx 10xxxxxx
 0000 0800-0000 FFFF | 1110xxxx 10xxxxxx 10xxxxxx
 0001 0000-0010 FFFF | 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
@@ -676,132 +590,52 @@ bool hadIllegalChar(const std::string & str) // return true when have invisible 
 
 time_t getUTCTimeFromLocalString(const std::string & str)
 {
-    std::string sdate;
-    std::string stime;
-    if (str.find(' ') != std::string::npos)
+    size_t offset = 0;
+    size_t len = 0;
+    trim(str.c_str(), str.length(), ' ', offset, len);
+    if (len == 0)
     {
-        auto sp = splitString<std::string>(trim(str, " "), " ", " ");
-        if (sp.size() < 2)
-        {
-            return 0;
-        }
-        sdate = sp.front();
-        stime = sp.back();
+        return 0;
     }
-    else
-    {
-        if (str.find(':') != std::string::npos)
-        {
-            stime = trim(str, " ");
-        }
-        else
-        {
-            sdate = trim(str, " ");
-        }
-    }
+    std::tuple<std::string, std::string> ret;
+    splitStringTupleImpl<std::tuple<std::string, std::string>, std::string, std::string>(ret, str.c_str()+offset, str.c_str() + offset + len, ' ');
+
+
     struct tm st;
     memset(&st, 0, sizeof(st));
-    if (!sdate.empty())
+    using DateFmt = std::tuple<int, int, int>;
+    DateFmt dateTuple;
+    DateFmt timeTuple;
+    if (true)
     {
-        std::string deli;
-        if (sdate.find('-') != std::string::npos)
+        char deli = '-';
+        if (std::get<0>(ret).find('/') != std::string::npos)
         {
-            deli = "-";
+            deli = '/';
         }
-        else if (sdate.find('/') != std::string::npos)
+        else if (std::get<0>(ret).find('\\') != std::string::npos)
         {
-            deli = "/";
+            deli = '\\';
         }
-        else if (sdate.find('\\') != std::string::npos)
-        {
-            deli = "\\";
-        }
-        std::vector<std::string> spdate;
-        if (!deli.empty())
-        {
-            spdate = splitString<std::string>(sdate, deli, " ");
-        }
-        else if (sdate.size() == 8)
-        {
-            spdate.push_back(sdate.substr(0, 4));
-            spdate.push_back(sdate.substr(4, 2));
-            spdate.push_back(sdate.substr(6, 2));
-        }
-        if (!spdate.empty())
-        {
-            if (spdate.back().size() == 4)
-            {
-                st.tm_year = fromString<int>(spdate.back(), 1900) - 1900;
-                if (spdate.size() >= 2)
-                {
-                    st.tm_mon = fromString<int>(spdate[spdate.size() - 2], 1) - 1;
-                }
-                if (spdate.size() >= 3)
-                {
-                    st.tm_mday = fromString<int>(spdate[spdate.size() - 3], 1);
-                }
-            }
-            else
-            {
-                st.tm_year = fromString<int>(spdate.front(), 1900) - 1900;
-                if (spdate.size() >= 2)
-                {
-                    st.tm_mon = fromString<int>(spdate[1], 1) - 1;
-                }
-                if (spdate.size() >= 3)
-                {
-                    st.tm_mday = fromString<int>(spdate[2], 1);
-                }
-            }
-        }
-    } //sdate
-    if (!stime.empty())
-    {
-        auto sptime = splitString<std::string>(stime, ":", " ");
-        if (sptime.size() >= 1)
-        {
-            st.tm_hour = fromString<int>(sptime[0], 0);
-        }
-        if (sptime.size() >= 2)
-        {
-            st.tm_min = fromString<int>(sptime[1], 0);
-        }
-        if (sptime.size() >= 3)
-        {
-            st.tm_sec = fromString<int>(sptime[2], 0);
-        }
+        trim(std::get<0>(ret).c_str(), std::get<0>(ret).length(), ' ', offset, len);
+        splitStringTupleImpl<DateFmt, int, int, int>(dateTuple, std::get<0>(ret).c_str() + offset, std::get<0>(ret).c_str() + offset + len, deli);
     }
-    st.tm_year = pruning(st.tm_year, 70, 200);
-    st.tm_mon = pruning(st.tm_mon, 0, 11);
-    st.tm_mday = pruning(st.tm_mday, 1, 31);
-    st.tm_hour = pruning(st.tm_hour, 0, 23);
-    st.tm_min = pruning(st.tm_min, 0, 59);
-    st.tm_sec = pruning(st.tm_sec, 0, 59);
+
+    trim(std::get<1>(ret).c_str(), std::get<0>(ret).length(), ' ', offset, len);
+    splitStringTupleImpl<DateFmt, int, int, int>(timeTuple, std::get<1>(ret).c_str() + offset, std::get<1>(ret).c_str() + offset + len, ':');
+    st.tm_year = pruning(std::get<0>(dateTuple) - 1900, 71, 135);
+    st.tm_mon = pruning(std::get<1>(dateTuple) - 1, 0, 11);
+    st.tm_mday = pruning(std::get<2>(dateTuple), 1, 31);
+    st.tm_hour = pruning(std::get<0>(timeTuple), 0, 23);
+    st.tm_min = pruning(std::get<1>(timeTuple), 0, 59);
+    st.tm_sec = pruning(std::get<2>(timeTuple), 0, 59);
     return mktime(&st);
 }
 
 time_t getSecondFromTimeString(const std::string & str)
 {
-    auto sptime = splitString<std::string>(str, ":", " ");
-    int hour = 0;
-    int minute = 0;
-    int second = 0;
-    if (sptime.size() >= 1)
-    {
-        hour = fromString<int>(sptime[0], 0);
-    }
-    if (sptime.size() >= 2)
-    {
-        minute = fromString<int>(sptime[1], 0);
-    }
-    if (sptime.size() >= 3)
-    {
-        second = fromString<int>(sptime[2], 0);
-    }
-    hour = pruning(hour, 0, 23);
-    minute = pruning(minute, 0, 59);
-    second = pruning(second, 0, 59);
-    return hour * 3600 + minute * 60 + second;
+    auto ret = splitStringTuple<int, int, int>(str, ':');
+    return pruning(std::get<0>(ret), 0, 23) * 3600 + pruning(std::get<1>(ret), 0, 59) * 60 + pruning(std::get<2>(ret), 0, 59);
 }
 
 std::string getProcessID()
@@ -859,33 +693,13 @@ std::string getProcessName()
     return name;
 }
 
-#ifdef __APPLE__
-//std::mt19937 __genRandom; // not thread safe - -!
-#elif defined(WIN32)
-//__declspec(thread) char __genRandomBacking[sizeof(std::mt19937)];
-//__declspec(thread) std::mt19937* __genRandom; //vs2013 support
-//__declspec(thread) bool __genRandomInited = false;
-#else
-thread_local std::mt19937 __genRandom; //vs2015 support
-#endif
+thread_local std::mt19937 __genRandom;
+
 //rand
 //==========================================================================
 unsigned int realRand()
 {
-    return (rand() &0x7fff) << 30 | (rand() & 0x7fff) << 15 | (rand() & 0x7fff);
-#ifdef WIN32
-    return (rand() << 20) | (rand() << 8) | (rand() &0xff);
-//    if (!__genRandomInited)
-//    {
-//        __genRandom = new(__genRandomBacking)std::mt19937();
-//        __genRandomInited = true;
-//    }
-//    return (*__genRandom)();
-#elif defined(__APPLE__)
-    return (rand() << 20) |(rand() << 8)  | rand(); 
-#else
     return __genRandom();
-#endif
 }
 unsigned int realRand(unsigned int mi, unsigned int mx)
 {
@@ -903,9 +717,10 @@ double realRandF(double mi, double mx)
 
 std::string getHostByName(const std::string & name, unsigned short port)
 {
-    auto ret = subStringBack(name, "https://");
-    ret = subStringBack(ret, "http://");
-    ret = subStringFront(ret, "/");
+    auto ret = subString(name, "https://", false).second;
+    ret = subString(ret, "http://", false).second;
+    ret += "/";
+    ret = subString(ret, "/", true).first;
     if (std::find_if(ret.begin(), ret.end(), [](char ch) {return !isdigit(ch) && ch != '.'; }) == ret.end())
     {
         return ret; //ipv4 

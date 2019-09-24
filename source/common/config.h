@@ -2,7 +2,7 @@
 
 /*
 * breeze License
-* Copyright (C) 2014-2016 YaweiZhang <yawei.zhang@foxmail.com>.
+* Copyright (C) 2014-2017 YaweiZhang <yawei.zhang@foxmail.com>.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -70,9 +70,9 @@ private:
     //异构的世界同步服务器的scene配置
 public:
     bool parseScenes(std::string configName, ui32 serverID);
-    inline const SceneConfig & getSceneConfig() { return _scene; }
+    inline const LineConfig & getSceneConfig() { return _scene; }
 private:
-    SceneConfig _scene;
+    LineConfig _scene;
 };
 
 

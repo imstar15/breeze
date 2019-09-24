@@ -21,9 +21,7 @@ endif()
 
 include_directories(${breeze_SOURCE_DIR}/../protocol/C++)
 include_directories(${breeze_SOURCE_DIR}/common)
-include_directories(${breeze_SOURCE_DIR}/common/dbhelper)
 include_directories(${breeze_SOURCE_DIR}/common/lua)
-include_directories(${breeze_SOURCE_DIR}/common/md5)
 
 link_directories(${breeze_SOURCE_DIR}/lib/)
 
@@ -36,7 +34,7 @@ else()
 	add_definitions(-Wall  -O2 -DNDEBUG  -D_GLIBCXX_USE_NANOSLEEP -static -Wno-deprecated-declarations -Wno-strict-aliasing)
 	set(LIB_SUFFIX "")
 endif()
-set(CMAKE_CXX_FLAGS "-std=c++11 -fpermissive")
+set(CMAKE_CXX_FLAGS "-std=c++1y -fpermissive")
 
 
 

@@ -1,6 +1,6 @@
 ﻿/*
 * breeze License
-* Copyright (C) 2015 - 2016 YaweiZhang <yawei.zhang@foxmail.com>.
+* Copyright (C) 2015 - 2017 YaweiZhang <yawei.zhang@foxmail.com>.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -23,17 +23,33 @@
 #define _WORLD_H_
 #include <common.h>
 #include <ProtoCommon.h>
-#include <ProtoDocker.h>
 #include <ProtoSceneCommon.h>
+#include <ProtoDocker.h>
 #include <ProtoSceneClient.h>
+#include <ProtoSceneServer.h>
 #include <rvo2/RVO.h>
 
-struct WorldServiceSession
+struct SceneDockerInfo
 {
-    AreaID areaID = InvalidAreaID;
-    ServiceType serviceType = InvalidServiceID; //all is singleton 
     SessionID sessionID = InvalidSessionID;
+    unsigned long long areaID = InvalidAreaID;
+    ServiceType serviceType = InvalidServiceID; //all is singleton
 };
+using SceneDockerInfoPtr = std::shared_ptr<SceneDockerInfo>;
+
+
+struct SceneLineInfo
+{
+    SessionID sessionID = InvalidSessionID;
+    SceneKnock knock;
+};
+using SceneLineInfoPtr = std::shared_ptr<SceneLineInfo>;
+
+using SceneGroupInfoPtr = std::shared_ptr<SceneGroupInfo>;
+using SceneGroupInfoPool = std::list<SceneGroupInfoPtr>;
+
+
+
 
 class World : public Singleton<World>
 {
@@ -45,31 +61,27 @@ public:
     void forceStop();
     void onShutdown();
     bool run();
-
-    
 public:
     bool isStopping();
 private:
-    SessionID getDockerLinked(AreaID areaID, ServiceType serviceType);
-    template <class Proto>
-    void directToService(SessionID sessionID, ServiceType serviceType, const Proto & proto);
-
-    template <class Proto>
-    void toService(AreaID areaID, ServiceType serviceType, const Proto & proto);
-
-private:
-    //内部接口 
-    //打开监听端口,新连接 
     bool startDockerListen();
     bool startSceneListen();
-
-
-
 public:
     void sendViaSessionID(SessionID sessionID, const char * block, unsigned int len);
     template<class Proto>
     void sendViaSessionID(SessionID sessionID, const Proto & proto);
-    
+
+    void toService(SessionID sessionID, const Tracing &trace, const char * block, unsigned int len);
+    template<class Proto>
+    void toService(SessionID sessionID, const Tracing &trace, const Proto & proto);
+
+    template <class Proto>
+    void toService(AreaID areaID, ServiceType indexServiceType, ServiceType dstServiceType, ServiceID dstServiceID, const Proto & proto); 
+
+
+    template<class Proto>
+    void backToService(SessionID sessionID, const Tracing &backTrace, const Proto & proto);
+
 
 private:
     //docker间通讯处理 
@@ -77,6 +89,18 @@ private:
     void event_onDockerClosed(TcpSessionPtr session);
     void event_onDockerMessage(TcpSessionPtr   session, const char * begin, unsigned int len);
     void event_onServiceForwardMessage(TcpSessionPtr   session, const Tracing & trace, ReadStream & rs);
+
+    void onChatReq(TcpSessionPtr session, const Tracing & trace, ChatReq & req);
+    void onSceneGroupGetReq(TcpSessionPtr session, const Tracing & trace, SceneGroupGetReq & req);
+    void onSceneGroupEnterReq(TcpSessionPtr session, const Tracing & trace, SceneGroupEnterReq & req);
+    void onSceneGroupCancelReq(TcpSessionPtr session, const Tracing & trace, SceneGroupCancelReq & req);
+
+    void onSceneServerJoinGroupIns(TcpSessionPtr session, const Tracing & trace, SceneServerJoinGroupIns & req);
+    void onSceneGroupInviteReq(TcpSessionPtr session, const Tracing & trace, SceneGroupInviteReq & req);
+    void onSceneGroupRejectReq(TcpSessionPtr session, const Tracing & trace, SceneGroupRejectReq & req);
+    void onSceneGroupLeaveReq(TcpSessionPtr session, const Tracing & trace, SceneGroupLeaveReq & req);
+
+
 
 private:
     //客户端通讯处理 
@@ -87,12 +111,34 @@ private:
 
 
 
+public:
+    SceneLineInfoPtr getLineInfo(LineID lineID);
+    SceneLineInfoPtr pickFreeLineNode(double step, double autoAdd);
+    SceneLineInfoPtr pickClosureLineNode(double step, double autoAdd);
+
 private:
-    Balance _sceneBalance;
-private:
-    std::map<AreaID, std::map<ServiceType, WorldServiceSession> > _services;
+    std::map<AreaID, std::map<ServiceType, SceneDockerInfo> > _services; //只记录singleton的service   
+    std::map<LineID, SceneLineInfoPtr> _lines;
+    Balance<LineID> _freeBalance;
+    Balance<LineID> _closureBalance;
     AccepterID _dockerListen = InvalidAccepterID;
     AccepterID _sceneListen = InvalidAccepterID;
+
+public:
+    SceneGroupInfoPtr getGroupInfoByAvatarID(ServiceID serviceID);
+    SceneGroupInfoPtr getGroupInfo(GroupID groupID);
+    void pushGroupInfoToClient(SceneGroupInfoPtr);
+private:
+    std::map<ServiceID, GroupID> _avatars;
+    std::map<GroupID, SceneGroupInfoPtr> _groups;
+    GroupID _lastGroupID = InvalidGroupID;
+
+private:
+    std::map<ui16, std::map<ui64, SceneGroupInfoPool> > _matchPools;
+    TimerID _matchTimerID = InvalidTimerID;
+    void onMatchTimer();
+    void onMatchFreeTimer(ui16 sceneType, ui64 mapID);
+    void onMatchArenaTimer();
 };
 
 
@@ -106,7 +152,7 @@ void World::sendViaSessionID(SessionID sessionID, const Proto & proto)
     {
         WriteStream ws(Proto::getProtoID());
         ws << proto;
-        SessionManager::getRef().sendSessionData(sessionID, ws.getStream(), ws.getStreamLen());
+        sendViaSessionID(sessionID, ws.getStream(), ws.getStreamLen());
     }
     catch (const std::exception & e)
     {
@@ -114,35 +160,76 @@ void World::sendViaSessionID(SessionID sessionID, const Proto & proto)
     }
 }
 
-template <class Proto>
-void World::directToService(SessionID sessionID, ServiceType serviceType, const Proto & proto)
+template<class Proto>
+void World::toService(SessionID sessionID, const Tracing &trace, const Proto & proto)
 {
-    Tracing trace;
-    trace.routing.toServiceType = serviceType;
-    trace.routing.toServiceID = InvalidServiceID;
-    trace.routing.fromServiceType = STWorldMgr;
-    trace.routing.fromServiceID = InvalidServiceID;
+    try
+    {
+        WriteStream ws(Proto::getProtoID());
+        ws << proto;
+        toService(sessionID, trace, ws.getStream(), ws.getStreamLen());
+    }
+    catch (const std::exception & e)
+    {
+        LOGE("Docker::forwardViaSessionID catch except error. e=" << e.what());
+    }
+}
 
-    WriteStream fd(ForwardToService::getProtoID());
-    WriteStream ws(Proto::getProtoID());
-    ws << proto;
-    fd << trace;
-    fd.appendOriginalData(ws.getStream(), ws.getStreamLen());
-    SessionManager::getRef().sendSessionData(sessionID, fd.getStream(), fd.getStreamLen());
+template<class Proto>
+void World::backToService(SessionID sessionID, const Tracing &backTrace, const Proto & proto)
+{
+    try
+    {
+        WriteStream ws(Proto::getProtoID());
+        ws << proto;
+
+        Tracing trace;
+        trace.oob = backTrace.oob;
+        trace.routing.toServiceType = backTrace.routing.fromServiceType;
+        trace.routing.toServiceID = backTrace.routing.fromServiceID;
+        trace.routing.fromServiceType = STWorldMgr;
+        trace.routing.fromServiceID = InvalidServiceID;
+        trace.routing.traceBackID = backTrace.routing.traceID;
+        trace.routing.traceID = 0;
+        toService(sessionID, trace, ws.getStream(), ws.getStreamLen());
+    }
+    catch (const std::exception & e)
+    {
+        LOGE("Docker::forwardViaSessionID catch except error. e=" << e.what());
+    }
 }
 
 template <class Proto>
-void World::toService(AreaID areaID, ServiceType serviceType, const Proto & proto)
+void World::toService(AreaID areaID, ServiceType indexServiceType, ServiceType dstServiceType, ServiceID dstServiceID, const Proto & proto)
 {
-
-    SessionID sID = getDockerLinked(areaID, serviceType);
-    if (sID == InvalidSessionID)
+    auto areaMapIter = _services.find(areaID);
+    if (areaMapIter == _services.end())
     {
-        LOGE("docker not linked.  areaID=" << areaID << ", serviceType=" << getServiceName(serviceType) 
-            << ", protoID=" << Proto::getProtoID());
+        LOGE("not have areaID when to Service. areaID=" << areaID);
+        return; 
+    }
+    auto founder = areaMapIter->second.find(indexServiceType);
+    if (founder == areaMapIter->second.end())
+    {
+        LOGE("not have indexServiceType when to Service. areaID=" << areaID << ", indexServiceType=" << indexServiceType);
         return;
     }
-    directToService(sID, serviceType, proto);
+    if (founder->second.sessionID == InvalidSessionID)
+    {
+        LOGW("the docker not linked when to Service. areaID=" << areaID << ", indexServiceType=" << indexServiceType);
+        return;
+    }
+    Tracing trace;
+    if (dstServiceType == STAvatar || dstServiceType == STClient)
+    {
+        trace.oob.clientAvatarID = dstServiceID;
+    }
+    trace.routing.fromServiceType = STWorldMgr;
+    trace.routing.fromServiceID = InvalidServiceID;
+    trace.routing.toServiceType = dstServiceType;
+    trace.routing.toServiceID = dstServiceID;
+
+    toService(founder->second.sessionID, trace, proto);
 }
 
 

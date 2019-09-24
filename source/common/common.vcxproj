@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
@@ -11,13 +11,17 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="aoe\aoe.h" />
     <ClInclude Include="balance.h" />
+    <ClInclude Include="bcui\bcui.h" />
     <ClInclude Include="common.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="dbAsync.h" />
     <ClInclude Include="dbDict.h" />
     <ClInclude Include="genID.h" />
     <ClInclude Include="defined.h" />
+    <ClInclude Include="luaextra\performance.h" />
+    <ClInclude Include="luaextra\summer.h" />
     <ClInclude Include="lua\fpconv.h" />
     <ClInclude Include="lua\lapi.h" />
     <ClInclude Include="lua\lauxlib.h" />
@@ -47,7 +51,6 @@
     <ClInclude Include="lua\lvm.h" />
     <ClInclude Include="lua\lzio.h" />
     <ClInclude Include="lua\strbuf.h" />
-    <ClInclude Include="lua\summer.h" />
     <ClInclude Include="md5\md5.h" />
     <ClInclude Include="rvo2\Agent.h" />
     <ClInclude Include="rvo2\Definitions.h" />
@@ -61,9 +64,14 @@
     <ClInclude Include="utlsImpl.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="aoe\aoe.cpp" />
+    <ClCompile Include="bcui\bcui.cpp" />
     <ClCompile Include="config.cpp" />
     <ClCompile Include="dbAsync.cpp" />
     <ClCompile Include="dbDict.cpp" />
+    <ClCompile Include="luaextra\lproto4z.c" />
+    <ClCompile Include="luaextra\performance.cpp" />
+    <ClCompile Include="luaextra\summer.cpp" />
     <ClCompile Include="lua\fpconv.c" />
     <ClCompile Include="lua\lapi.c" />
     <ClCompile Include="lua\lauxlib.c" />
@@ -88,7 +96,6 @@
     <ClCompile Include="lua\lopcodes.c" />
     <ClCompile Include="lua\loslib.c" />
     <ClCompile Include="lua\lparser.c" />
-    <ClCompile Include="lua\lproto4z.c" />
     <ClCompile Include="lua\lstate.c" />
     <ClCompile Include="lua\lstring.c" />
     <ClCompile Include="lua\lstrlib.c" />
@@ -101,7 +108,6 @@
     <ClCompile Include="lua\lvm.c" />
     <ClCompile Include="lua\lzio.c" />
     <ClCompile Include="lua\strbuf.c" />
-    <ClCompile Include="lua\summer.cpp" />
     <ClCompile Include="md5\md5.cpp" />
     <ClCompile Include="rvo2\Agent.cpp" />
     <ClCompile Include="rvo2\KdTree.cpp" />
@@ -113,18 +119,19 @@
     <ProjectGuid>{AE557081-EA4D-49A7-A629-49EA151806DF}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>common</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>

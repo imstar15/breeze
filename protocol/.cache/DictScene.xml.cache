@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF - 8"?>
+
+<cppmd5>ab92300384d88cbb1eecb558dec5c764</cppmd5> 
+<luamd5>3c0eb7977bc8ee6ebe50a05b60097521</luamd5> 
+<csharpmd5>f5247f39f8d675bf1f6e54ccb4caa6d6</csharpmd5> 
+<xmlmd5>c8203039ddb8137bd1e46009a0436d52</xmlmd5> 
+<cacheNumber>
+    <cache key = "AOESearch" Number = "11001" /> 
+    <cache key = "DictBuff" Number = "11002" /> 
+    <cache key = "DictProp" Number = "11000" /> 
+    <cache key = "DictSkill" Number = "11003" /> 
+</cacheNumber>

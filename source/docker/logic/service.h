@@ -9,7 +9,7 @@
  *
  * ===============================================================================
  *
- * Copyright (C) 2010-2016 YaweiZhang <yawei.zhang@foxmail.com>.
+ * Copyright (C) 2010-2017 YaweiZhang <yawei.zhang@foxmail.com>.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -91,7 +91,7 @@ protected:
     inline void setServiceName(ServiceName serviceName) { _serviceName = serviceName; }
     inline void setServiceDockerID(DockerID dockerID) { _serviceDockerID = dockerID; }
     inline void setClientSessionID(SessionID clientSessionID) { _clientSessionID = clientSessionID; }
-    inline void setClientDockerID(SessionID clientDockerID) { _clientDockerID = clientDockerID; }
+    inline void setClientDockerID(DockerID clientDockerID) { _clientDockerID = clientDockerID; }
 
     inline void setStatus(ui16 status) { _status = status; };
     inline void setShell(bool shell) { _shell = shell; }
@@ -166,9 +166,9 @@ private:
 
 
 private:
-    ui32 makeCallback(const ServiceCallback &cb);
+    ui64 makeCallback(const ServiceCallback &cb);
     void cleanCallback();
-    ServiceCallback checkoutCallback(ui32 cbid);
+    ServiceCallback checkoutCallback(ui64 cbid);
 
 private:
     Slots _slots;
@@ -187,9 +187,9 @@ private:
     
 
 private:
-    ui32 _callbackSeq = 0;
+    ui64 _callbackSeq = 0;
     time_t _callbackCleanTS = 0;
-    std::map<ui32, std::pair<time_t,ServiceCallback> > _cbs;
+    std::map<ui64, std::pair<time_t,ServiceCallback> > _cbs;
 
 };
 using ServicePtr = std::shared_ptr<Service>;

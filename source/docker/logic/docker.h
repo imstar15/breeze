@@ -1,6 +1,6 @@
 ﻿/*
 * breeze License
-* Copyright (C) 2015 - 2016 YaweiZhang <yawei.zhang@foxmail.com>.
+* Copyright (C) 2015 - 2017 YaweiZhang <yawei.zhang@foxmail.com>.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -146,6 +146,7 @@ private:
     void event_onLoadServiceNotice(TcpSessionPtr session, ReadStream & rs);
     void event_onSwitchServiceClientNotice(TcpSessionPtr session, ReadStream & rs);
     void event_onKickRealClient(TcpSessionPtr session, ReadStream & rs);
+    void event_onKickClientsNotice(TcpSessionPtr session, ReadStream & rs);
     void event_onUnloadServiceInDocker(TcpSessionPtr session, ReadStream & rs);
     void event_onUnloadedServiceNotice(TcpSessionPtr session, ReadStream & rs);
 
@@ -154,11 +155,11 @@ private:
     void event_onForwardToDocker(TcpSessionPtr session, ReadStream & rsShell);
 
 public://负载均衡 
-    inline Balance & getAvatarBalance(){return _avatarBalance;}
-    inline Balance & getWebBalance(){return _webBalance;}
+    inline Balance<DockerID> & getAvatarBalance(){return _avatarBalance;}
+    inline Balance<DockerID> & getWebBalance(){return _webBalance;}
 private:
-    Balance _avatarBalance;
-    Balance _webBalance;
+    Balance<DockerID> _avatarBalance;
+    Balance<DockerID> _webBalance;
 
 private:
     std::unordered_map<ui16, std::unordered_map<ServiceID, ServicePtr > > _services;

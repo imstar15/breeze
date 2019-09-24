@@ -19,8 +19,6 @@ breeze is a lightweight, fast, distributed server engine. greatly inspired by do
   
 - 日志库使用log4z.  
   
-- breeze的**理论最大规模为252个docker节点**, 推荐为1-150个节点,具体根据自己需求调整.  
-  
 - breeze的单组服务器设计容量在实际项目中, **轻度游戏10~100万同时在线**, 有大量交互的模块和丰富的外围系统的**中度/重度游戏1~10万+在线**(瓶颈在于交互模块的单例service的负载能力, 通过对业务的把握尽量拆分更多的单例service, 转移负载到负载均衡的动态service上可以有效提升和突破这个上限), 数据库注册容量<=1000万(大于这个容量要考虑对数据库进行sharding, 垂直sharding直接根据业务进行分割, 添加更多的数据库service类型和配置即可, 而单表大于1000万需要水平sharding, 这个对dbhelper进行扩展后可以对业务层透明,但暂无需求 并没有去实现. , 另外需要注意减小不需要装载的service的驻留资源, 超规模使用资源不好挥霍的.).  
   
 
@@ -41,8 +39,7 @@ docker是用来托管service的专用vm:
 docker的资源消耗:  
 > docker集群的socket数量开销= (docker个数的平方)*2  
 > docker集群的总端口占用数量开销=docker个数的平方  
-> 操作系统的可用端口数量小于64k, 也就是docker无法突破的理论上限是252个docker进程.  
-  
+
   
 ### service:  
 --- 
@@ -54,7 +51,7 @@ service是breeze引擎的核心结构, 通过包装对docker接口的再次包�
 > service的依赖关系通过简单的定义即可, docker会自动组织为正确的装载/卸载依赖拓扑图并据此进行装载和卸载等操作.  
   
   
-## 已实现的部分业务模块 (供参考和上手)  
+## 已实现的部分业务模块 (核心框架部分)  
 ### 登录流程  
 --- 
 已实现多角色账户的登录,创建用户,装载用户service, 切换用户客户端, 踢掉客户端, 卸载用户service, 离线消息, webservice, dbservice等.  
@@ -64,9 +61,9 @@ service是breeze引擎的核心结构, 通过包装对docker接口的再次包�
 所有运行中的数据库操作, info,log等 都需要走该service中专.  
 配合proto4z的mysql序列化方案, 可以一个调用实现增删改查,  而通过ModuleData的模板类, 则实现按照业务模块一键从数据库中load/create/update/insert等同步.  
 
-### UserMgrService  
+### AvatarMgrService  
 --- 
-用户中心service, 用于用户service的创建,装载,客户端认证通讯关联等.  
+玩家中心service, 用于玩家service的创建,装载,客户端认证通讯关联等.  
 也用于玩家管理,特别是离线玩家的管理(在线玩家可以直接server对service进行交互). 
   
 ### WebService  
@@ -82,6 +79,13 @@ service是breeze引擎的核心结构, 通过包装对docker接口的再次包�
 ### DBDict  
 该字典类不属于docker和service, 是一个全局可直接访问的字典集合, 存储服务器引擎所有业务配置(字典)  .
 
+### STWorldMgr  
+场景服务, 异构模块.  
+该服务为一个小型实时MOBA服务器.  包括场景管理服务和场景服务集群  
+目前已经实现作为一个moba游戏的核心框架和模块.   
+该服务器的实现初衷为复刻一个小型war3服务器,通过玩法定制实现WAR的各种自定义地图模式.    
+对应的客户端项目为breeze_unity3d_client    
+
 
 ## 后续版本计划  
   对service和现有的utls公共小工具添加lua胶水代码, 并实现一套lua版的ModuleData来同步数据库, 这样就引擎的使用者可以自由决策逻辑层用lua还是C++ .   
@@ -89,18 +93,18 @@ service是breeze引擎的核心结构, 通过包装对docker接口的再次包�
   需求暂不强烈, 暂缓该计划的执行.  
 
 ## About The Author  
-**Auther**: YaweiZhang  
+**Author**: YaweiZhang  
 **Mail**: yawei.zhang@foxmail.com  
 **GitHub**: https://github.com/zsummer  
   
   
 ## Friend Open Source  
 **NoahGameFrame**  
--  Auther: ketoo  
+-  Author: ketoo  
 -  GitHub: https://github.com/ketoo/NoahGameFrame  
 -  Description: A fast, scalable, distributed game server framework for C++, include actor library, network library,can be used as a real time multiplayer game engine ( MMO RPG ), which plan to support C#/Python/Lua script, and support Unity3d, Cocos2dx, FlashAir client access.  
    
 **gce**  
--  Auther: nousxiong  
+-  Author: nousxiong  
 -  GitHub: https://github.com/nousxiong/gce  
 -  Description: The Game Communication Environment (GCE) is an actor model framework for online game development.  

@@ -14,11 +14,11 @@ function Session.new(...)
     return session
 end
 
-function Session:ctor(sID, account, token, userName, iconID)
+function Session:ctor(sID, account, token, avatarName, iconID)
     self.sID=sID
     self.account=account
     self.token=token
-    self.userName=userName
+    self.avatarName=avatarName
     self.avatarID=0
     self.iconID = iconID
 end
@@ -33,7 +33,7 @@ function Session:whenLinked(sID, remoteIP, remotePort)
 end
 
 function Session:onDisconnect(sID, remoteIP, remotePort)
-	logi("session is on disconnect. sID=" .. sID .. ", remoteIP=" .. remoteIP .. ", remotePort=" .. remotePort)
+    logi("session is on disconnect. sID=" .. sID .. ", remoteIP=" .. remoteIP .. ", remotePort=" .. remotePort)
 end
 
 function Session:onClientAuthResp(sID, msg)
@@ -42,10 +42,10 @@ function Session:onClientAuthResp(sID, msg)
             self.avatarID = msg.previews[1].avatarID
             send(sID, "AttachAvatarReq", {avatarID=msg.previews[1].avatarID})
         else
-            send(sID, "CreateAvatarReq", {userName=self.userName})
+            send(sID, "CreateAvatarReq", {avatarName=self.avatarName})
         end
     else
-	dump(msg, "error Session:onClientAuthResp")
+    dump(msg, "error Session:onClientAuthResp")
     end
 end
 
